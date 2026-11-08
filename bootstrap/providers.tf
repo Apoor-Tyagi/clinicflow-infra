@@ -3,9 +3,9 @@ provider "aws" {
 
   default_tags {
     tags = {
-      project = "clinicflow"
-      env = "bootstarp"
+      project    = "clinicflow"
+      env        = "bootstarp"
       managed_by = "terraform"
     }
-    }
   }
+}
