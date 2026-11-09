@@ -1,6 +1,7 @@
 data "aws_region" "current" {}
 
 resource "aws_vpc" "this" {
+  #checkov:skip=CKV2_AWS_11: Flow logs need CloudWatch storage, which costs money; enabled in production
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
   enable_dns_hostnames = true

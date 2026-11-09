@@ -47,7 +47,7 @@ jobs:
 
       - name: checkov
         run: |
-          pip install --quiet checkov
+          pip install --quiet "checkov==3.4.3"
           checkov -d . --framework terraform --compact --quiet
 
   plan-dev:
