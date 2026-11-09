@@ -96,6 +96,7 @@ resource "aws_iam_role_policy" "k3s_node" {
 # --- First SSM parameter (secrets will come later as SecureString) ---
 
 resource "aws_ssm_parameter" "environment" {
+  #checkov:skip=CKV2_AWS_34: Plain environment name, not sensitive; real secrets will be SecureString with the project KMS key
   name  = "/${var.name}/app/environment"
   type  = "String"
   value = var.environment

@@ -5,6 +5,10 @@ locals {
 }
 
 resource "aws_s3_bucket" "state" {
+  #checkov:skip=CKV_AWS_18: Single-purpose state bucket; access is audited through CloudTrail
+  #checkov:skip=CKV_AWS_144: Versioning covers accidental changes; cross-region copy is part of the DR work
+  #checkov:skip=CKV_AWS_145: AES256 is free and encrypted at rest; a customer KMS key adds cost, production upgrade
+  #checkov:skip=CKV2_AWS_62: No consumer for bucket events on a state bucket
   bucket = local.bucket_name
 
   lifecycle {
