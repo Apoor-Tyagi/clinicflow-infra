@@ -1,0 +1,91 @@
+name: terraform-ci
+
+on:
+  pull_request:
+    paths:
+      - "bootstrap/**"
+      - "modules/**"
+      - "envs/**"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.17.1
+
+      - name: Format check
+        run: terraform fmt -check -recursive
+
+      - name: Validate each root module
+        run: |
+          for dir in bootstrap envs/dev; do
+            echo "::group::validate $dir"
+            terraform -chdir="$dir" init -backend=false -input=false
+            terraform -chdir="$dir" validate
+            echo "::endgroup::"
+          done
+
+      - uses: terraform-linters/setup-tflint@v4
+
+      - name: tflint
+        run: |
+          tflint --init
+          tflint --recursive
+
+      - name: checkov
+        run: |
+          pip install --quiet checkov
+          checkov -d . --framework terraform --compact --quiet
+
+  plan-dev:
+    needs: static-checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.17.1
+          terraform_wrapper: false
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Terraform init
+        working-directory: envs/dev
+        run: terraform init -input=false
+
+      - name: Terraform plan
+        working-directory: envs/dev
+        run: |
+          set -o pipefail
+          terraform plan -input=false -no-color -lock-timeout=60s | tee plan.txt
+
+      - name: Show plan in the job summary
+        if: always()
+        working-directory: envs/dev
+        run: |
+          {
+            echo '### Terraform plan: dev'
+            echo '```'
+            tail -n 60 plan.txt 2>/dev/null || echo "No plan output"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
