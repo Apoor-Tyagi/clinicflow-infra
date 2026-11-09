@@ -17,3 +17,8 @@ variable "monthly_budget_usd" {
   default     = 5
 
 }
+variable "github_repo" {
+  type        = string
+  description = "GitHub repository allowed to assume the CI roles, in owner/name form"
+  default     = "Apoor-Tyagi/clinic-infra"
+}
