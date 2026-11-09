@@ -17,8 +17,8 @@ variable "monthly_budget_usd" {
   default     = 5
 
 }
-variable "github_repo" {
+variable "github_sub_prefix" {
   type        = string
-  description = "GitHub repository allowed to assume the CI roles, in owner/name form"
-  default     = "Apoor-Tyagi/clinicflow-infra"
+  description = "Immutable OIDC subject prefix of the GitHub repo allowed to assume the CI roles"
+  default     = "repo:Apoor-Tyagi@201375503/clinicflow-infra@1449518229"
 }
