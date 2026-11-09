@@ -1,4 +1,3 @@
-data "aws_vpc" "current" {}
 data "aws_region" "current" {}
 
 resource "aws_vpc" "this" {
@@ -20,6 +19,7 @@ resource "aws_default_security_group" "this" {
   tags = { Name = "${var.name}-default-sg-locked" }
 }
 resource "aws_subnet" "public" {
+  #checkov:skip=CKV_AWS_130: Public subnet is intentional, the k3s node needs a public IP
   count = length(var.public_subnet_cidrs)
 
   vpc_id                  = aws_vpc.this.id
