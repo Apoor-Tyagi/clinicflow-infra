@@ -27,8 +27,8 @@ variable "github_app_sub_prefix" {
   type        = string
   description = "Immutable OIDC subject prefix of the app repository that may push images"
 
-  validation {
-    condition     = startswith(var.github_app_sub_prefix, "repo:")
-    error_message = "Use the sub_claim_prefix from the GitHub API, starting with repo:."
+    validation {
+    condition     = can(regex("^repo:[^@/]+@[0-9]+/[^@/]+@[0-9]+$", var.github_app_sub_prefix))
+    error_message = "Use the sub_claim_prefix from the GitHub API, e.g. repo:OWNER@123/REPO@456."
   }
 }
