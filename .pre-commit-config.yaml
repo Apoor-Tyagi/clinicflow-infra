@@ -1,0 +1,23 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: block-state-and-plan-files
+        name: block state, plan and tfvars files
+        entry: Terraform state, plan and tfvars files must never be committed
+        language: fail
+        files: '\.(tfstate|tfplan|tfvars)(\.|$)'
+
+      - id: terraform-fmt
+        name: terraform fmt
+        entry: terraform fmt -recursive
+        language: system
+        files: '\.tf$'
+        pass_filenames: false
