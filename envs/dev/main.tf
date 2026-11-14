@@ -23,4 +23,7 @@ module "compute_k3s" {
   instance_type         = "t3.small"
   architecture          = "x86_64"
   root_volume_gb        = 20
+  k3s_version           = "v1.35.5+k3s1"
+  argocd_version        = "v3.6.1"
+  gitops_raw_url        = "https://raw.githubusercontent.com/Apoor-Tyagi/clinicflow-gitops/main"
 }

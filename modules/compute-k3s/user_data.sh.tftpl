@@ -1,0 +1,83 @@
+#!/bin/bash
+set -euo pipefail
+exec > >(tee -a /var/log/clinicflow-bootstrap.log) 2>&1
+echo "bootstrap started: $(date -u)"
+
+export HOME=/root
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
+# 1. k3s, pinned to one release
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="${k3s_version}" sh -s -
+until kubectl get nodes 2>/dev/null | grep -q " Ready"; do sleep 5; done
+
+# 2. Namespaces
+kubectl create namespace clinicflow-dev --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+
+# 3. ECR pull secret, refreshed every 6 hours (ECR tokens last 12)
+cat > /usr/local/bin/refresh-ecr-secret.sh <<'SCRIPT'
+#!/bin/bash
+set -euo pipefail
+export HOME=/root
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+TOKEN=$(aws ecr get-login-password --region ${region})
+kubectl -n clinicflow-dev create secret docker-registry ecr-pull \
+  --docker-server=${ecr_registry} \
+  --docker-username=AWS \
+  --docker-password="$TOKEN" \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n clinicflow-dev patch serviceaccount default \
+  -p '{"imagePullSecrets":[{"name":"ecr-pull"}]}'
+SCRIPT
+chmod 700 /usr/local/bin/refresh-ecr-secret.sh
+
+cat > /etc/systemd/system/refresh-ecr-secret.service <<'UNIT'
+[Unit]
+Description=Refresh the ECR image pull secret
+After=k3s.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/refresh-ecr-secret.sh
+UNIT
+
+cat > /etc/systemd/system/refresh-ecr-secret.timer <<'UNIT'
+[Unit]
+Description=Refresh the ECR image pull secret every 6 hours
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=6h
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+systemctl daemon-reload
+/usr/local/bin/refresh-ecr-secret.sh
+systemctl enable --now refresh-ecr-secret.timer
+
+# 4. Lab database with a password generated here, never stored in Git
+PGPASS=$(openssl rand -hex 16)
+kubectl -n clinicflow-dev create secret generic postgres-credentials \
+  --from-literal=POSTGRES_USER=clinicflow \
+  --from-literal=POSTGRES_PASSWORD="$PGPASS" \
+  --from-literal=POSTGRES_DB=clinicflow \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n clinicflow-dev create secret generic api-config \
+  --from-literal=DATABASE_URL="postgresql://clinicflow:$PGPASS@postgres:5432/clinicflow" \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl apply -f "${gitops_raw_url}/lab/postgres.yaml"
+
+# 5. Argo CD, pinned
+kubectl apply -n argocd --server-side --force-conflicts \
+  -f "https://raw.githubusercontent.com/argoproj/argo-cd/${argocd_version}/manifests/install.yaml"
+kubectl wait --for condition=established crd/applications.argoproj.io --timeout=180s
+kubectl -n argocd rollout status deploy/argocd-server --timeout=600s
+
+# Save memory on a small node: these three are not needed here
+kubectl -n argocd scale deploy argocd-dex-server argocd-notifications-controller argocd-applicationset-controller --replicas=0
+
+# 6. Hand over to GitOps
+kubectl apply -f "${gitops_raw_url}/argocd/aws/clinicflow-api-aws.yaml"
+echo "bootstrap finished: $(date -u)"
