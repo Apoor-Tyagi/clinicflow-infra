@@ -2,6 +2,8 @@
 set -euo pipefail
 exec > >(tee -a /var/log/clinicflow-bootstrap.log) 2>&1
 echo "bootstrap started: $(date -u)"
+# Safety net: power off after 4 hours so a forgotten node cannot keep billing
+shutdown -h +240
 
 export HOME=/root
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml

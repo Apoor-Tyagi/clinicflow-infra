@@ -63,7 +63,8 @@ resource "aws_instance" "node" {
     region         = data.aws_region.current.region
     ecr_registry   = local.ecr_registry
   })
-  user_data_replace_on_change = true
+  user_data_replace_on_change          = true
+  instance_initiated_shutdown_behavior = "terminate"
 
 
   metadata_options {
