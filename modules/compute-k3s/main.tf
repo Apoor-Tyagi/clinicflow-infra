@@ -1,8 +1,18 @@
 # Latest Amazon Linux 2023 AMI, looked up from AWS's public parameter
 # so no AMI ID is hardcoded and goes stale
+
 data "aws_ssm_parameter" "al2023" {
   name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-${var.architecture}"
 }
+# Latest Amazon Linux 2023 AMI, looked up from AWS's public parameter
+
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+locals {
+  ecr_registry = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${data.aws_region.current.region}.amazonaws.com"
+}
+
 
 resource "aws_security_group" "node" {
   name        = "${var.name}-k3s-node"
@@ -46,6 +56,15 @@ resource "aws_instance" "node" {
   iam_instance_profile   = var.instance_profile_name
   vpc_security_group_ids = [aws_security_group.node.id]
   ebs_optimized          = true
+  user_data = templatefile("${path.module}/user_data.sh.tftpl", {
+    k3s_version    = var.k3s_version
+    argocd_version = var.argocd_version
+    gitops_raw_url = var.gitops_raw_url
+    region         = data.aws_region.current.region
+    ecr_registry   = local.ecr_registry
+  })
+  user_data_replace_on_change = true
+
 
   metadata_options {
     http_endpoint               = "enabled"
