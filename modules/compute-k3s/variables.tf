@@ -37,3 +37,18 @@ variable "root_volume_gb" {
   type        = number
   description = "Root volume size in GiB"
 }
+
+variable "k3s_version" {
+  type        = string
+  description = "Pinned k3s release, for example v1.35.5+k3s1"
+}
+
+variable "argocd_version" {
+  type        = string
+  description = "Pinned Argo CD release tag, matching your local cluster"
+}
+
+variable "gitops_raw_url" {
+  type        = string
+  description = "Raw GitHub URL of the gitops repo main branch, without a trailing slash"
+}
