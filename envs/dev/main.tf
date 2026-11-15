@@ -34,3 +34,19 @@ module "audit_table" {
   kms_key_arn         = module.security.kms_key_arn
   deletion_protection = false
 }
+module "database" {
+  source = "../../modules/data-rds"
+
+  name                      = "clinicflow-dev"
+  vpc_id                    = module.network.vpc_id
+  subnet_ids                = module.network.data_subnet_ids
+  allowed_security_group_id = module.compute_k3s.security_group_id
+  kms_key_arn               = module.security.kms_key_arn
+  engine_version            = "17.11"
+  parameter_group_family    = "postgres17"
+  instance_class            = "db.t4g.micro"
+  allocated_storage_gb      = 20
+  backup_retention_days     = 1
+  multi_az                  = false
+  deletion_protection       = false
+}
