@@ -24,7 +24,7 @@ Dev configuration (`envs/dev/main.tf`):
 | Multi-AZ | off |
 | Backup retention | 1 day |
 | Deletion protection | off |
-| Encryption | project KMS key |
+| Encryption | project KMS key (storage and master secret) |
 | Network | data subnets; ingress only from the k3s node security group |
 
 ### Why RDS with a managed master secret

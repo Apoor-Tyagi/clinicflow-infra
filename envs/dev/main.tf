@@ -10,8 +10,10 @@ module "network" {
 module "security" {
   source = "../../modules/security"
 
-  name        = "clinicflow-dev"
-  environment = "dev"
+  name              = "clinicflow-dev"
+  environment       = "dev"
+  master_secret_arn = module.database.master_secret_arn
+  audit_table_arn   = module.audit_table.table_arn
 }
 module "compute_k3s" {
   source = "../../modules/compute-k3s"
