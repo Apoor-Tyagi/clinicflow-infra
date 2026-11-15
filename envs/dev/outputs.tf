@@ -26,3 +26,7 @@ output "k3s_ssm_connect_command" {
   description = "Command to open a shell on the node without SSH"
   value       = module.compute_k3s.ssm_connect_command
 }
+output "audit_table_name" {
+  description = "Name of the audit table"
+  value       = module.audit_table.table_name
+}

@@ -27,3 +27,10 @@ module "compute_k3s" {
   argocd_version        = "v3.6.1"
   gitops_raw_url        = "https://raw.githubusercontent.com/Apoor-Tyagi/clinicflow-gitops/main"
 }
+module "audit_table" {
+  source = "../../modules/data-dynamodb"
+
+  name                = "clinicflow-dev-audit"
+  kms_key_arn         = module.security.kms_key_arn
+  deletion_protection = false
+}
