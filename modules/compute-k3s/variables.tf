@@ -52,3 +52,18 @@ variable "gitops_raw_url" {
   type        = string
   description = "Raw GitHub URL of the gitops repo main branch, without a trailing slash"
 }
+
+variable "db_host" {
+  type        = string
+  description = "Hostname of the RDS database"
+}
+
+variable "db_master_secret_arn" {
+  type        = string
+  description = "Secrets Manager secret that holds the RDS master credentials"
+}
+
+variable "app_raw_url" {
+  type        = string
+  description = "Raw GitHub URL of the app repo main branch, without a trailing slash"
+}

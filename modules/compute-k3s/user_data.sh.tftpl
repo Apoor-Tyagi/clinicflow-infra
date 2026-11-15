@@ -59,17 +59,67 @@ systemctl daemon-reload
 /usr/local/bin/refresh-ecr-secret.sh
 systemctl enable --now refresh-ecr-secret.timer
 
-# 4. Lab database with a password generated here, never stored in Git
-PGPASS=$(openssl rand -hex 16)
-kubectl -n clinicflow-dev create secret generic postgres-credentials \
-  --from-literal=POSTGRES_USER=clinicflow \
-  --from-literal=POSTGRES_PASSWORD="$PGPASS" \
-  --from-literal=POSTGRES_DB=clinicflow \
+# 4. Database on RDS: migrate as the master user, then create the app credentials
+SECRET_JSON=$(aws secretsmanager get-secret-value --region ${region} --secret-id ${db_master_secret_arn} --query SecretString --output text)
+DB_ADMIN_USER=$(printf '%s' "$SECRET_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["username"])')
+DB_ADMIN_PASS=$(printf '%s' "$SECRET_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["password"])')
+unset SECRET_JSON
+APP_PASS=$(openssl rand -hex 16)
+
+curl -sfL "${app_raw_url}/db/migrations/001_tenant_model.sql" -o /tmp/001_tenant_model.sql
+kubectl -n clinicflow-dev create configmap db-migration --from-file=/tmp/001_tenant_model.sql --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n clinicflow-dev create secret generic db-admin \
+  --from-literal=PGHOST=${db_host} \
+  --from-literal=PGUSER="$DB_ADMIN_USER" \
+  --from-literal=PGPASSWORD="$DB_ADMIN_PASS" \
+  --from-literal=PGDATABASE=clinicflow \
+  --from-literal=PGSSLMODE=require \
+  --from-literal=APP_PASS="$APP_PASS" \
   --dry-run=client -o yaml | kubectl apply -f -
+unset DB_ADMIN_PASS
+
+kubectl -n clinicflow-dev delete job db-migrate --ignore-not-found
+kubectl apply -f - <<'JOB'
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: clinicflow-dev
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: postgres:17-alpine
+          envFrom:
+            - secretRef:
+                name: db-admin
+          command: ["sh", "-c"]
+          args:
+            - |
+              if [ "$(psql -tAc "SELECT to_regclass('public.clinics')")" = "public.clinics" ]; then
+                echo "schema already exists, skipping migration"
+              else
+                psql -v ON_ERROR_STOP=1 -f /sql/001_tenant_model.sql
+              fi
+              psql -v ON_ERROR_STOP=1 -c "ALTER ROLE clinicflow_app PASSWORD '$APP_PASS'"
+          volumeMounts:
+            - name: sql
+              mountPath: /sql
+      volumes:
+        - name: sql
+          configMap:
+            name: db-migration
+JOB
+kubectl -n clinicflow-dev wait --for=condition=complete job/db-migrate --timeout=600s
+kubectl -n clinicflow-dev delete secret db-admin
+
 kubectl -n clinicflow-dev create secret generic api-config \
-  --from-literal=DATABASE_URL="postgresql://clinicflow:$PGPASS@postgres:5432/clinicflow" \
+  --from-literal=DATABASE_URL="postgresql://clinicflow_app:$APP_PASS@${db_host}:5432/clinicflow?sslmode=require" \
   --dry-run=client -o yaml | kubectl apply -f -
-kubectl apply -f "${gitops_raw_url}/lab/postgres.yaml"
+unset APP_PASS
 
 # 5. Argo CD, pinned
 kubectl apply -n argocd --server-side --force-conflicts \
