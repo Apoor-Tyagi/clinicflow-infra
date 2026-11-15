@@ -12,3 +12,8 @@ output "ssm_connect_command" {
   description = "Command to open a shell on the node without SSH"
   value       = "aws ssm start-session --target ${aws_instance.node.id} --region us-east-1"
 }
+
+output "security_group_id" {
+  description = "Security group of the k3s node"
+  value       = aws_security_group.node.id
+}
