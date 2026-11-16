@@ -28,6 +28,9 @@ module "compute_k3s" {
   k3s_version           = "v1.35.5+k3s1"
   argocd_version        = "v3.6.1"
   gitops_raw_url        = "https://raw.githubusercontent.com/Apoor-Tyagi/clinicflow-gitops/main"
+  db_host               = module.database.address
+  db_master_secret_arn  = module.database.master_secret_arn
+  app_raw_url           = "https://raw.githubusercontent.com/Apoor-Tyagi/clinicflow-app/main"
 }
 module "audit_table" {
   source = "../../modules/data-dynamodb"

@@ -57,11 +57,14 @@ resource "aws_instance" "node" {
   vpc_security_group_ids = [aws_security_group.node.id]
   ebs_optimized          = true
   user_data = templatefile("${path.module}/user_data.sh.tftpl", {
-    k3s_version    = var.k3s_version
-    argocd_version = var.argocd_version
-    gitops_raw_url = var.gitops_raw_url
-    region         = data.aws_region.current.region
-    ecr_registry   = local.ecr_registry
+    k3s_version          = var.k3s_version
+    argocd_version       = var.argocd_version
+    gitops_raw_url       = var.gitops_raw_url
+    region               = data.aws_region.current.region
+    ecr_registry         = local.ecr_registry
+    db_host              = var.db_host
+    db_master_secret_arn = var.db_master_secret_arn
+    app_raw_url          = var.app_raw_url
   })
   user_data_replace_on_change          = true
   instance_initiated_shutdown_behavior = "terminate"
