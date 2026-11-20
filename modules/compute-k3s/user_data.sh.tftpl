@@ -64,6 +64,14 @@ SECRET_JSON=$(aws secretsmanager get-secret-value --region ${region} --secret-id
 DB_ADMIN_USER=$(printf '%s' "$SECRET_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["username"])')
 DB_ADMIN_PASS=$(printf '%s' "$SECRET_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["password"])')
 unset SECRET_JSON
+
+# Wait until the new RDS hostname resolves (it can lag the database becoming available)
+for i in $(seq 1 60); do
+  getent hosts ${db_host} > /dev/null && break
+  echo "waiting for DNS: ${db_host} ($i)"
+  sleep 10
+done
+getent hosts ${db_host} > /dev/null || { echo "RDS hostname never resolved"; exit 1; }
 APP_PASS=$(openssl rand -hex 16)
 
 curl -sfL "${app_raw_url}/db/migrations/001_tenant_model.sql" -o /tmp/001_tenant_model.sql
@@ -99,7 +107,8 @@ spec:
           command: ["sh", "-c"]
           args:
             - |
-              if [ "$(psql -tAc "SELECT to_regclass('public.clinics')")" = "public.clinics" ]; then
+              EXISTS=$(psql -tAc "SELECT to_regclass('public.clinics')") || exit 1
+              if [ "$EXISTS" = "public.clinics" ]; then
                 echo "schema already exists, skipping migration"
               else
                 psql -v ON_ERROR_STOP=1 -f /sql/001_tenant_model.sql
