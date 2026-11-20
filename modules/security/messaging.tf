@@ -1,0 +1,47 @@
+# --- Worker access to the reminders queue and the SES sender, each scoped to one resource ---
+
+data "aws_iam_policy_document" "messaging" {
+  statement {
+    sid    = "ConsumeRemindersQueue"
+    effect = "Allow"
+    actions = [
+      "sqs:ReceiveMessage",
+      "sqs:DeleteMessage",
+      "sqs:ChangeMessageVisibility",
+      "sqs:GetQueueAttributes",
+    ]
+    resources = [var.reminders_queue_arn]
+  }
+
+  statement {
+    sid       = "UseKeyForQueue"
+    effect    = "Allow"
+    actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
+    resources = [aws_kms_key.this.arn]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["sqs.${data.aws_region.current.region}.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid       = "SendReminderEmail"
+    effect    = "Allow"
+    actions   = ["ses:SendEmail"]
+    resources = [var.sender_identity_arn]
+
+    condition {
+      test     = "StringEquals"
+      variable = "ses:FromAddress"
+      values   = [var.sender_email]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "messaging" {
+  name   = "messaging"
+  role   = aws_iam_role.k3s_node.id
+  policy = data.aws_iam_policy_document.messaging.json
+}

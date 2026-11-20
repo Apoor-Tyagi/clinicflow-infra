@@ -17,3 +17,18 @@ variable "audit_table_arn" {
   type        = string
   description = "ARN of the DynamoDB audit table the node may write to"
 }
+
+variable "reminders_queue_arn" {
+  type        = string
+  description = "ARN of the reminders queue the worker consumes"
+}
+
+variable "sender_identity_arn" {
+  type        = string
+  description = "ARN of the SES identity the worker sends from"
+}
+
+variable "sender_email" {
+  type        = string
+  description = "Address the worker is allowed to send as"
+}
