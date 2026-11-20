@@ -75,6 +75,8 @@ jobs:
 
       - name: Terraform plan
         working-directory: envs/dev
+        env:
+          TF_VAR_reminder_sender_email: ci-placeholder@example.com
         run: |
           set -o pipefail
           terraform plan -input=false -no-color -lock-timeout=60s | tee plan.txt

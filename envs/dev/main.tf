@@ -55,3 +55,13 @@ module "database" {
   multi_az                  = false
   deletion_protection       = false
 }
+
+module "messaging" {
+  source = "../../modules/messaging"
+
+  name                       = "clinicflow-dev"
+  kms_key_arn                = module.security.kms_key_arn
+  sender_email               = var.reminder_sender_email
+  max_receive_count          = 3
+  visibility_timeout_seconds = 60
+}
