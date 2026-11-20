@@ -10,10 +10,13 @@ module "network" {
 module "security" {
   source = "../../modules/security"
 
-  name              = "clinicflow-dev"
-  environment       = "dev"
-  master_secret_arn = module.database.master_secret_arn
-  audit_table_arn   = module.audit_table.table_arn
+  name                = "clinicflow-dev"
+  environment         = "dev"
+  master_secret_arn   = module.database.master_secret_arn
+  audit_table_arn     = module.audit_table.table_arn
+  reminders_queue_arn = module.messaging.queue_arn
+  sender_identity_arn = module.messaging.sender_identity_arn
+  sender_email        = var.reminder_sender_email
 }
 module "compute_k3s" {
   source = "../../modules/compute-k3s"
