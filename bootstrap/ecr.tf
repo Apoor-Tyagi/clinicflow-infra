@@ -18,11 +18,11 @@ resource "aws_ecr_lifecycle_policy" "api" {
   policy = jsonencode({
     rules = [{
       rulePriority = 1
-      description  = "Keep only the 20 most recent images"
+      description  = "Keep the 60 most recent entries (3 per multi-arch push, so about 20 pushes)"
       selection = {
         tagStatus   = "any"
         countType   = "imageCountMoreThan"
-        countNumber = 20
+        countNumber = 60
       }
       action = { type = "expire" }
     }]
