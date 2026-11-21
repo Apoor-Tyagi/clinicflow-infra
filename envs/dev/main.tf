@@ -25,7 +25,7 @@ module "compute_k3s" {
   vpc_id                = module.network.vpc_id
   subnet_id             = module.network.public_subnet_ids[0]
   instance_profile_name = module.security.k3s_instance_profile_name
-  instance_type         = "t3.small"
+  instance_type         = "t3.medium"
   architecture          = "x86_64"
   root_volume_gb        = 20
   k3s_version           = "v1.35.5+k3s1"
