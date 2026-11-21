@@ -67,3 +67,18 @@ variable "app_raw_url" {
   type        = string
   description = "Raw GitHub URL of the app repo main branch, without a trailing slash"
 }
+
+variable "queue_url" {
+  type        = string
+  description = "URL of the reminders queue the worker consumes"
+}
+
+variable "sender_email" {
+  type        = string
+  description = "Address the worker sends reminder emails from"
+}
+
+variable "audit_table_name" {
+  type        = string
+  description = "DynamoDB table the worker writes delivery records to"
+}

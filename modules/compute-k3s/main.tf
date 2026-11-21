@@ -65,6 +65,9 @@ resource "aws_instance" "node" {
     db_host              = var.db_host
     db_master_secret_arn = var.db_master_secret_arn
     app_raw_url          = var.app_raw_url
+    queue_url            = var.queue_url
+    sender_email         = var.sender_email
+    audit_table          = var.audit_table_name
   })
   user_data_replace_on_change          = true
   instance_initiated_shutdown_behavior = "terminate"
