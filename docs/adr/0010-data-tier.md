@@ -75,3 +75,15 @@ The check that this holds on RDS is `test_app_role_cannot_bypass_row_level_secur
 - **Node IAM.** The instance role gets `secretsmanager:GetSecretValue` on the single master secret plus KMS decrypt for it, and `dynamodb:PutItem` and `dynamodb:Query` on the audit table plus KMS access for DynamoDB. No wildcard resources.
 - **Operating model.** The data tier is applied only in deliberate sessions, after a price check, and destroyed at the end. A session script owns that flow.
 - **Production gap.** Multi-AZ, monitoring, longer backups, deletion protection and a final snapshot are all required before any real patient data is stored.
+
+## Second session: the fix worked, and showed a gap
+
+- With the loud existence check in place, one migration pod failed with a DNS
+  error and changed nothing. The Job's retry then ran the migration. Before the
+  fix, the same blip made the script take the "schema missing" branch by luck.
+- The failure came from the cluster resolver, not the node. The DNS wait in the
+  bootstrap script runs on the host, so it did not cover the pod.
+- Fix: the Job now waits for the database with pg_isready, using the pod's own
+  network, before it checks whether the schema exists.
+- Lesson: an idempotency check must tell "no" apart from "could not ask", and a
+  wait must use the same resolver as the thing that depends on it.

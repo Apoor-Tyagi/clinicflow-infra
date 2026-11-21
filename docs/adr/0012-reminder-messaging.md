@@ -56,3 +56,20 @@ expose patient data in logs or in the audit trail.
 - Nothing here has run on AWS yet. The first session must confirm the sender
   identity from the email AWS sends, send one test message, and check that the
   email arrives, the audit item exists and the dead-letter queue stays empty.
+
+## Observed on AWS
+
+- A valid reminder was sent through SES. The audit record was written and the
+  message was deleted from the queue.
+- A second delivery of the same message was recognized by the conditional write
+  and dropped, so the audit table kept one record.
+- A message that was not valid JSON was rejected on each of three receives, 60
+  seconds apart, matching the visibility timeout. It then moved to the
+  dead-letter queue with its body intact.
+- The worker journal contained no email addresses.
+- The worker used the node role from a host service. The role needed no
+  permission beyond the scoped policy.
+- In sandbox mode the sender and recipient both have to be verified. Re-creating
+  an identity by hand outside Terraform caused a mismatch between the address in
+  the variables file and the one in SES. Identities are owned by Terraform and
+  should not be edited by hand.
