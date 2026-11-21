@@ -9,11 +9,31 @@ data "aws_subnets" "default" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_iam_policy_document" "kms" {
+  #checkov:skip=CKV_AWS_109: In a key policy, Resource "*" means this key only
+  #checkov:skip=CKV_AWS_111: In a key policy, Resource "*" means this key only
+  #checkov:skip=CKV_AWS_356: In a key policy, Resource "*" means this key only
+  statement {
+    sid       = "AccountAdministration"
+    effect    = "Allow"
+    actions   = ["kms:*"]
+    resources = ["*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+}
+
 # A snapshot encrypted in the primary region cannot be copied without a key in the target region
 resource "aws_kms_key" "dr" {
   description             = "clinicflow DR: encrypts snapshot copies and the restored instance"
   enable_key_rotation     = true
   deletion_window_in_days = 7
+  policy                  = data.aws_iam_policy_document.kms.json
 }
 
 resource "aws_kms_alias" "dr" {
@@ -38,6 +58,7 @@ resource "aws_db_parameter_group" "dr" {
 }
 
 resource "aws_security_group" "restore" {
+  #checkov:skip=CKV2_AWS_5: attached to the restored instance by the restore command, which Terraform does not manage
   name        = "clinicflow-dr-restore"
   description = "PostgreSQL from the operator address only, for the DR drill"
   vpc_id      = data.aws_vpc.default.id
