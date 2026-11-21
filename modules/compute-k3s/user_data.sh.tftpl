@@ -141,4 +141,50 @@ kubectl -n argocd scale deploy argocd-dex-server argocd-notifications-controller
 
 # 6. Hand over to GitOps
 kubectl apply -f "${gitops_raw_url}/argocd/aws/clinicflow-api-aws.yaml"
+# 7. Reminder worker as a hardened systemd service. It runs on the host, so it can use
+# the node role through the normal metadata path while pods still cannot reach that role.
+dnf install -y python3.12 || echo "python3.12 not available, falling back to the default python3"
+PYBIN=$(command -v python3.12 || command -v python3)
+echo "worker python: $($PYBIN --version)"
+install -d -m 0755 /opt/clinicflow-worker
+curl -sfL "${app_raw_url}/worker/worker.py" -o /opt/clinicflow-worker/worker.py
+curl -sfL "${app_raw_url}/worker/requirements.txt" -o /opt/clinicflow-worker/requirements.txt
+$PYBIN -m venv /opt/clinicflow-worker/venv
+/opt/clinicflow-worker/venv/bin/pip install --no-cache-dir -r /opt/clinicflow-worker/requirements.txt \
+  || { echo "pinned install failed, installing boto3 unpinned"; /opt/clinicflow-worker/venv/bin/pip install --no-cache-dir boto3; }
+
+cat > /etc/systemd/system/clinicflow-worker.service <<'UNIT'
+[Unit]
+Description=ClinicFlow reminder worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Environment=AWS_REGION=${region}
+Environment=QUEUE_URL=${queue_url}
+Environment=SENDER_EMAIL=${sender_email}
+Environment=AUDIT_TABLE=${audit_table}
+ExecStart=/opt/clinicflow-worker/venv/bin/python /opt/clinicflow-worker/worker.py
+Restart=always
+RestartSec=5
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now clinicflow-worker.service
+sleep 5
+systemctl is-active clinicflow-worker.service
+
 echo "bootstrap finished: $(date -u)"

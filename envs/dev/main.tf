@@ -34,6 +34,9 @@ module "compute_k3s" {
   db_host               = module.database.address
   db_master_secret_arn  = module.database.master_secret_arn
   app_raw_url           = "https://raw.githubusercontent.com/Apoor-Tyagi/clinicflow-app/main"
+  queue_url             = module.messaging.queue_url
+  sender_email          = var.reminder_sender_email
+  audit_table_name      = module.audit_table.table_name
 }
 module "audit_table" {
   source = "../../modules/data-dynamodb"
