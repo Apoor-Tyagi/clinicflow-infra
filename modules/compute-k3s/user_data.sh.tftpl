@@ -107,6 +107,8 @@ spec:
           command: ["sh", "-c"]
           args:
             - |
+              for i in $(seq 1 60); do pg_isready -q && break; echo "waiting for database ($i)"; sleep 5; done
+              pg_isready -q || { echo "database never became ready"; exit 1; }
               EXISTS=$(psql -tAc "SELECT to_regclass('public.clinics')") || exit 1
               if [ "$EXISTS" = "public.clinics" ]; then
                 echo "schema already exists, skipping migration"
