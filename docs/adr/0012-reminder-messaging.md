@@ -73,3 +73,22 @@ expose patient data in logs or in the audit trail.
   an identity by hand outside Terraform caused a mismatch between the address in
   the variables file and the one in SES. Identities are owned by Terraform and
   should not be edited by hand.
+
+## Observed duplicate email, and the change
+
+On AWS, a message delivered a second time sent a second email, because the worker
+sent first and recorded afterwards. The conditional write then dropped the second
+record, but the email had already gone out.
+
+The worker now looks up the audit record with a strongly consistent query before
+sending, and drops the message without sending if the record exists. A failed
+lookup keeps the message on the queue instead of sending blind. The lookup uses
+dynamodb:Query, which the node role already allows. The conditional write stays as
+a second line of defence against two workers handling the same message at once.
+
+This is proven by unit tests and not yet on AWS, because the worker is downloaded
+from the main branch at first boot. The next session should resend one message
+twice and confirm that one email arrives.
+
+A crash between the send and the record can still produce one duplicate, so
+delivery remains at-least-once.
