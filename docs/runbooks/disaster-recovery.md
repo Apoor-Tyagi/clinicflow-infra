@@ -17,8 +17,10 @@ quickly during an outage if the primary region's Terraform state is unreachable.
 
 The recovery point is the age of the newest copied backup. A daily backup plan
 (modules/backup, ADR 0014) copies the database to the vault in envs/dr at 03:00
-UTC, so it should be under about 24 hours. That plan has not run on AWS yet, so
-treat it as unproven until a copy has been seen in the DR vault.
+UTC, so it should be under about 24 hours. A backup and its copy were run by hand on
+2026-11-22 (about 4 and 3.5 minutes) and landed in the DR vault. The daily schedule
+itself has not yet been observed, so confirm that a copy appears after 03:00 UTC
+before relying on it.
 
 ## Steps and measured times
 
@@ -60,6 +62,6 @@ the source environment first.
 
 ## Known gaps
 
-- Scheduled backups exist in code but have not run on AWS, so the recovery point is unproven.
+- The daily backup schedule has not yet been observed running. A manual backup and copy worked.
 - The restore commands are not scripted. The drill ran them by hand.
 - The application role's isolation after a restore has not been re-tested.

@@ -95,3 +95,10 @@ copy, a query with no clinic set returned a row even with FORCE ROW LEVEL
 SECURITY on, so the isolation tests and the policies protect the application
 role only. The master credential is an operator credential and must never be
 used by the application.
+
+## Finding: a static parameter needs an explicit apply method
+
+rds.force_ssl is static. Without apply_method set to pending-reboot, Terraform asks
+for immediate, which AWS refuses for static parameters. The first plan after a real
+apply showed a permanent change on the parameter group. Setting apply_method to
+pending-reboot made the plan clean in both the dev and DR environments.

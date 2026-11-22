@@ -86,9 +86,9 @@ lookup keeps the message on the queue instead of sending blind. The lookup uses
 dynamodb:Query, which the node role already allows. The conditional write stays as
 a second line of defence against two workers handling the same message at once.
 
-This is proven by unit tests and not yet on AWS, because the worker is downloaded
-from the main branch at first boot. The next session should resend one message
-twice and confirm that one email arrives.
+Verified on AWS on 2026-11-22. The same reminder was sent twice, 60 seconds apart.
+One email arrived, the audit table held one record, and the worker log showed the
+second delivery dropped as already sent.
 
 A crash between the send and the record can still produce one duplicate, so
 delivery remains at-least-once.
@@ -105,5 +105,10 @@ policy gained one statement that lets cloudwatch.amazonaws.com use the key, limi
 to this account. The recipient address is a variable that defaults to empty and is
 set only in the local tfvars file, so it never enters Git.
 
-Not yet tested on AWS. After the next apply, confirm the subscription email, send
-one bad message and check that the alarm fires.
+Verified on AWS on 2026-11-22. A malformed message was received three times and
+reached the dead-letter queue 3 min 19 s after it was sent. The alarm fired 6 min
+4 s after it was sent, and the email arrived.
+
+An email subscription starts unconfirmed, and SNS silently drops alerts until the
+confirmation link is clicked. The first apply of each session sends that link, and
+it is easy to miss. The alarm email only arrived after the link was confirmed.

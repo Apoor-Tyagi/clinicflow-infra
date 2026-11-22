@@ -42,15 +42,15 @@ Assets worth protecting, most sensitive first:
 | Tampering | A forged or malformed message reaches the worker | Messages are parsed strictly; bad messages stay on the queue and move to the dead-letter queue after 3 receives | No message signing; trust rests on who can send to the queue (IAM) |
 | Repudiation | Nobody can show whether a reminder was sent | A DynamoDB audit record per reminder, written after the send | A crash between the send and the record can lose the record |
 | Information disclosure | The audit table leaks patient addresses | The audit record never holds the recipient address (tested) | Logs were reviewed for this only informally |
-| Denial of service | A poison message blocks the queue | Visibility timeout and a dead-letter queue | No alarm on dead-letter queue depth yet |
-| Denial of service | A duplicate delivery sends two emails | The worker looks up the audit record with a strongly consistent query before sending; a conditional write is the second defence | Delivery is at-least-once. This was proven by unit tests, not yet on AWS |
+| Denial of service | A poison message blocks the queue | Visibility timeout, a dead-letter queue, and an email alarm (measured: alarm 6 min after the message was sent) | The email subscription must be confirmed by hand after each apply, or alerts are dropped |
+| Denial of service | A duplicate delivery sends two emails | The worker looks up the audit record with a strongly consistent query before sending; a conditional write is the second defence | Delivery is at-least-once, and a crash between the send and the record can still duplicate. Verified on AWS: the same reminder sent twice gave one email |
 | Elevation of privilege | The worker abuses its role | Runs as a hardened systemd service; the IAM policy allows only the specific queue, SES sender, and PutItem and Query on the audit table | It uses the node's instance role, so a compromised worker holds the node's permissions, not a role of its own |
 
 ### The k3s node
 
 | STRIDE | Threat | Control today | Gap |
 |---|---|---|---|
-| Elevation of privilege | A pod steals the instance role through metadata | IMDSv2 required with a hop limit of 1, so pods cannot reach it | Not re-tested from inside a pod |
+| Elevation of privilege | A pod steals the instance role through metadata | IMDSv2 required with a hop limit of 1, so pods cannot reach it. Verified: a pod timed out requesting a token while the node got HTTP 200 | None known |
 | Spoofing | Someone logs in to the node | No SSH and no key pair; access only through Session Manager under IAM | Session activity is not logged to a separate store |
 | Information disclosure | Secrets are read from the cluster | The application database password is created at bootstrap and held in a Kubernetes Secret | Not verified whether Kubernetes Secrets are encrypted at rest in k3s; assume they are not |
 | Denial of service | The single node fails | A new node can be built from Terraform and Argo CD | No high availability; the node is a single point of failure by design, for cost |
@@ -63,7 +63,7 @@ Assets worth protecting, most sensitive first:
 | Spoofing | Another repository assumes the AWS role | OIDC trust is limited to this repository's immutable IDs; no stored AWS keys | Not re-audited since the policy was written |
 | Elevation of privilege | A pull request changes infrastructure | PR plans use a read-only plan role; changes are applied by hand | The apply step is manual and depends on the operator's own credentials |
 | Tampering | Unreviewed code reaches main | Branch rulesets protect main; checks must pass; pre-commit blocks state, plan and tfvars files | Single maintainer, so review is self-review |
-| Tampering | A dependency or Action is compromised | Dependabot proposes updates for Actions and Terraform providers | Actions are pinned by version tag, not by commit hash |
+| Tampering | A dependency or Action is compromised | Dependabot proposes updates for Actions and Terraform providers; Actions are pinned to commit hashes | Pins freeze at today's commit, so Dependabot proposals still need reviewing |
 
 ### Disaster recovery
 
@@ -71,20 +71,18 @@ Assets worth protecting, most sensitive first:
 |---|---|---|---|
 | Information disclosure | A copied snapshot is read in the DR region | Snapshots are copied encrypted with a DR key that has an explicit policy | None known |
 | Information disclosure | A restored database is left open | The DR security group allows only a single operator address; the runbook says to remove it afterwards | Removal depends on following the runbook |
-| Denial of service | No recent copy exists when needed | Runbook documents the manual copy | Scheduled backups with a cross-region copy exist in code (ADR 0014) but have not run on AWS |
+| Denial of service | No recent copy exists when needed | Runbook documents the manual copy | A backup and cross-region copy worked when started by hand (ADR 0014); the daily schedule has not yet been observed |
 
 ## Not covered
 
-- A CloudTrail trail exists in code (ADR 0015) but has not been applied, and nothing alerts on it. There is no account-level detection.
+- A CloudTrail trail is applied and logging (ADR 0015), but nothing alerts on it. There is no account-level detection.
 - No WAF or rate limiting in front of the API.
 - SES is in sandbox mode, so abuse and bounce handling are not exercised.
 - No penetration test and no formal review beyond this document.
 
 ## Priorities
 
-1. Scheduled snapshots with a cross-region copy (closes the recovery point gap).
-2. CloudTrail with logs to a protected bucket.
-3. An alarm on dead-letter queue depth.
-4. Pin GitHub Actions by commit hash.
-5. Verify Kubernetes Secret encryption at rest, and turn it on if it is off.
-6. Re-test pod access to instance metadata from inside a pod.
+1. Verify Kubernetes Secret encryption at rest, and turn it on if it is off.
+2. Observe the daily backup schedule running and a copy arriving unaided.
+3. Alert on CloudTrail events such as root logins and IAM changes.
+4. Add admission control in the cluster, for example Kyverno.

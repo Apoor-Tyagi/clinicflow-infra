@@ -35,9 +35,13 @@ the dev tfvars, then apply dev.
 - The DR key and vault exist as long as envs/dr is applied, and cost a little.
 - The DR vault also uses force_destroy, so tearing down envs/dr is not blocked by copies that have not expired yet.
 
-## Not yet verified
+## Verified on AWS (2026-11-22)
 
-This is validated and scanned but has not run on AWS. The first apply should confirm
-that a backup completes, that the copy appears in the DR vault, and that the role's
-key permissions are enough for the cross-region copy. If the copy fails with a key
-error, the fix is in the role's key policy, not in the plan.
+A backup started by hand completed in about 4 minutes, and its copy into the DR vault
+in about 3.5 minutes. The copy appeared as a completed recovery point in us-west-2,
+so the backup role's key permissions are sufficient.
+
+Two things were not covered. The copy was started by hand with the same role, not by
+the plan's own copy rule, and the daily 03:00 UTC schedule has not yet been observed
+running. Both are confirmed by leaving the plan applied past 03:00 UTC and finding a
+recovery point in each vault.

@@ -44,6 +44,10 @@ All figures come from real runs. The measurement notes are in the ADRs.
 | Tenant isolation on RDS | The application role sees no rows without a clinic set. The master user is outside the guarantee ([ADR 0010](docs/adr/0010-data-tier.md)) |
 | Reminder pipeline | Delivered, duplicate dropped, bad message in the DLQ after three receives 60 seconds apart, no addresses in logs |
 | Disaster recovery drill | Cross-region restore in 16 min 6 s of AWS time, RPO 43 s ([ADR 0013](docs/adr/0013-disaster-recovery-drill.md)) |
+| Dead-letter queue alarm | A malformed message reached the dead-letter queue 3 min 19 s after it was sent, and the email alarm fired 6 min 4 s after it was sent ([ADR 0012](docs/adr/0012-reminder-messaging.md)) |
+| Duplicate reminders | The same reminder sent twice, 60 s apart, produced one email and one audit record; the worker logged the second as a dropped duplicate ([ADR 0012](docs/adr/0012-reminder-messaging.md)) |
+| Scheduled backups | A backup started by hand completed in about 4 min and its cross-region copy in about 3.5 min, into an encrypted vault in us-west-2. The daily schedule itself has not yet been observed running ([ADR 0014](docs/adr/0014-scheduled-backups.md)) |
+| Instance role from a pod | A pod timed out requesting a metadata token (curl exit 28) while the node itself got HTTP 200 |
 | SLO alert under fault injection (local, 5% failures) | Fast-burn alert pending 19 s after the first failure, firing after 2 min 36 s, resolved about 4 min after the failures stopped. A low-traffic baseline makes this faster than a busy service would be |
 | Cost of the AWS sessions | $0.06 of billed usage so far (EC2 $0.03, RDS $0.02, ECR $0.01), with no credits applied. Billing lags by a day or two, so the latest sessions, including the DR drill, are not yet in that figure. Every session ended with a destroy |
 
