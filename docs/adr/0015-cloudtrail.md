@@ -28,8 +28,9 @@ file validation on so tampering can be detected.
   the fact, not detection.
 - No cross-region replication of the logs.
 
-## Not yet verified
+## Verified on AWS (2026-11-22)
 
-The plan is clean and the scan passes, but the trail has not been applied. After
-the apply, confirm that a log file arrives in the bucket and that validation works
-with: aws cloudtrail validate-logs.
+The trail was applied and delivered 101 log files within about two hours. Running
+aws cloudtrail validate-logs over the first hour found 2 of 2 digest files valid
+and 26 of 26 log files valid, so tampering between delivery and validation would
+have been detected. Nothing alerts on the trail yet.
