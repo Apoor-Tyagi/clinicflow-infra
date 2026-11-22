@@ -33,6 +33,7 @@ the dev tfvars, then apply dev.
 - Dev is destroyed after each session, so backups only accumulate in an environment
   that stays up. The copy in the DR vault outlives dev until its 7 days expire.
 - The DR key and vault exist as long as envs/dr is applied, and cost a little.
+- The DR vault also uses force_destroy, so tearing down envs/dr is not blocked by copies that have not expired yet.
 
 ## Not yet verified
 
