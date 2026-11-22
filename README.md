@@ -42,7 +42,7 @@ All figures come from real runs. The measurement notes are in the ADRs.
 | Tenant isolation on RDS | The application role sees no rows without a clinic set. The master user is outside the guarantee ([ADR 0010](docs/adr/0010-data-tier.md)) |
 | Reminder pipeline | Delivered, duplicate dropped, bad message in the DLQ after three receives 60 seconds apart, no addresses in logs |
 | Disaster recovery drill | Cross-region restore in 16 min 6 s of AWS time, RPO 43 s ([ADR 0013](docs/adr/0013-disaster-recovery-drill.md)) |
-| SLO alert fires under fault injection | TODO: record the pending and firing times from Prometheus |
+| SLO alert under fault injection (local, 5% failures) | Fast-burn alert pending 19 s after the first failure, firing after 2 min 36 s, resolved about 4 min after the failures stopped. A low-traffic baseline makes this faster than a busy service would be |
 | Cost per session | TODO: record the Cost Explorer totals |
 
 ## Pipelines
