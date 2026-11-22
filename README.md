@@ -30,6 +30,8 @@ row-level security.
 - Secrets never enter Git or Terraform state. The database password is managed
   by RDS and read at boot.
 - Every decision is recorded in [docs/adr](docs/adr).
+- The disaster recovery steps and measured times are in the [runbook](docs/runbooks/disaster-recovery.md).
+- Risks, controls and known gaps are in the [threat model](docs/threat-model.md).
 
 ## Evidence
 
