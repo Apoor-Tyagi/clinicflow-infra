@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /bootstrap
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /envs/dev
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /envs/dr
+    schedule:
+      interval: weekly
