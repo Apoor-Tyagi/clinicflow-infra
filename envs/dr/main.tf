@@ -77,4 +77,7 @@ resource "aws_vpc_security_group_ingress_rule" "operator" {
 resource "aws_backup_vault" "dr" {
   name        = "clinicflow-dr"
   kms_key_arn = aws_kms_key.dr.arn
+  # Copies expire after 7 days anyway. Without this, destroying envs/dr after a
+  # drill would fail while a recovery point is still inside the vault
+  force_destroy = true
 }
