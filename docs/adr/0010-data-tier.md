@@ -87,3 +87,11 @@ The check that this holds on RDS is `test_app_role_cannot_bypass_row_level_secur
   network, before it checks whether the schema exists.
 - Lesson: an idempotency check must tell "no" apart from "could not ask", and a
   wait must use the same resolver as the thing that depends on it.
+
+## Finding from the disaster recovery drill
+
+The RDS master user is outside the row-level-security guarantee. On a restored
+copy, a query with no clinic set returned a row even with FORCE ROW LEVEL
+SECURITY on, so the isolation tests and the policies protect the application
+role only. The master credential is an operator credential and must never be
+used by the application.
