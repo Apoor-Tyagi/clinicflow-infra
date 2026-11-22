@@ -43,7 +43,7 @@ All figures come from real runs. The measurement notes are in the ADRs.
 | Reminder pipeline | Delivered, duplicate dropped, bad message in the DLQ after three receives 60 seconds apart, no addresses in logs |
 | Disaster recovery drill | Cross-region restore in 16 min 6 s of AWS time, RPO 43 s ([ADR 0013](docs/adr/0013-disaster-recovery-drill.md)) |
 | SLO alert under fault injection (local, 5% failures) | Fast-burn alert pending 19 s after the first failure, firing after 2 min 36 s, resolved about 4 min after the failures stopped. A low-traffic baseline makes this faster than a busy service would be |
-| Cost per session | TODO: record the Cost Explorer totals |
+| Cost of the AWS sessions | $0.06 of billed usage so far (EC2 $0.03, RDS $0.02, ECR $0.01), with no credits applied. Billing lags by a day or two, so the latest sessions, including the DR drill, are not yet in that figure. Every session ended with a destroy |
 
 ## Pipelines
 
