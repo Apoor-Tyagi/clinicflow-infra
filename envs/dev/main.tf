@@ -70,4 +70,5 @@ module "messaging" {
   sender_email               = var.reminder_sender_email
   max_receive_count          = 3
   visibility_timeout_seconds = 60
+  alarm_email                = var.alarm_email
 }

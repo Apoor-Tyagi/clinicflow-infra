@@ -92,3 +92,18 @@ twice and confirm that one email arrives.
 
 A crash between the send and the record can still produce one duplicate, so
 delivery remains at-least-once.
+
+## Dead-letter queue alarm
+
+A message that fails three times moves to the dead-letter queue, where it waited
+silently. A CloudWatch alarm now fires when the queue holds any message, and an SNS
+topic emails the operator.
+
+The topic is encrypted with the project key, not the AWS-managed SNS key, because
+CloudWatch cannot publish to a topic encrypted with an AWS-managed key. The key
+policy gained one statement that lets cloudwatch.amazonaws.com use the key, limited
+to this account. The recipient address is a variable that defaults to empty and is
+set only in the local tfvars file, so it never enters Git.
+
+Not yet tested on AWS. After the next apply, confirm the subscription email, send
+one bad message and check that the alarm fires.

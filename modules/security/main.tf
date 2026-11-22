@@ -4,6 +4,23 @@ data "aws_region" "current" {}
 # --- KMS key used to encrypt data at rest across the project ---
 
 data "aws_iam_policy_document" "kms" {
+  statement {
+    sid       = "AllowCloudWatchAlarmsToPublish"
+    actions   = ["kms:Decrypt", "kms:GenerateDataKey*"]
+    resources = ["*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudwatch.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+
   #checkov:skip=CKV_AWS_109: In a key policy, Resource "*" means this key only
   #checkov:skip=CKV_AWS_111: In a key policy, Resource "*" means this key only
   #checkov:skip=CKV_AWS_356: In a key policy, Resource "*" means this key only
