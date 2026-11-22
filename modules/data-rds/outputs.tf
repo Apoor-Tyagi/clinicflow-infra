@@ -17,3 +17,8 @@ output "security_group_id" {
   description = "Security group of the database"
   value       = aws_security_group.db.id
 }
+
+output "instance_arn" {
+  description = "ARN of the database instance"
+  value       = aws_db_instance.this.arn
+}

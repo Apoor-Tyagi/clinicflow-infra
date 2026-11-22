@@ -14,3 +14,15 @@ variable "alarm_email" {
   default     = ""
   description = "Address for dead-letter queue alerts. Set it in terraform.tfvars, never in Git"
 }
+
+variable "dr_backup_vault_arn" {
+  type        = string
+  default     = ""
+  description = "Vault in the DR region (output of envs/dr). Empty means no cross-region copy"
+}
+
+variable "dr_kms_key_arn" {
+  type        = string
+  default     = ""
+  description = "Key of the DR vault (output of envs/dr)"
+}

@@ -18,3 +18,8 @@ output "security_group_id" {
   description = "Security group of the restored instance"
   value       = aws_security_group.restore.id
 }
+
+output "backup_vault_arn" {
+  description = "Vault that receives cross-region backup copies"
+  value       = aws_backup_vault.dr.arn
+}

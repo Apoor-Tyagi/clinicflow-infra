@@ -15,9 +15,10 @@ quickly during an outage if the primary region's Terraform state is unreachable.
 - A security group (output: security_group_id)
 - A recent snapshot of the primary database, copied to us-west-2
 
-The recovery point is the age of the newest copied snapshot. Nothing in this
-repository takes snapshots on a schedule yet, so a snapshot only exists if someone
-took and copied it. Treat that as a gap to close before relying on this runbook.
+The recovery point is the age of the newest copied backup. A daily backup plan
+(modules/backup, ADR 0014) copies the database to the vault in envs/dr at 03:00
+UTC, so it should be under about 24 hours. That plan has not run on AWS yet, so
+treat it as unproven until a copy has been seen in the DR vault.
 
 ## Steps and measured times
 
@@ -59,6 +60,6 @@ the source environment first.
 
 ## Known gaps
 
-- No scheduled snapshots or replication, so recovery point depends on a manual copy.
+- Scheduled backups exist in code but have not run on AWS, so the recovery point is unproven.
 - The restore commands are not scripted. The drill ran them by hand.
 - The application role's isolation after a restore has not been re-tested.

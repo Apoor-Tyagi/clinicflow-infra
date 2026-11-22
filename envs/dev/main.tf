@@ -72,3 +72,13 @@ module "messaging" {
   visibility_timeout_seconds = 60
   alarm_email                = var.alarm_email
 }
+
+module "backup" {
+  source = "../../modules/backup"
+
+  name                    = "clinicflow-dev"
+  kms_key_arn             = module.security.kms_key_arn
+  db_arn                  = module.database.instance_arn
+  destination_vault_arn   = var.dr_backup_vault_arn
+  destination_kms_key_arn = var.dr_kms_key_arn
+}

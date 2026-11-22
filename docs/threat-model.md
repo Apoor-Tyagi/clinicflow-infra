@@ -71,7 +71,7 @@ Assets worth protecting, most sensitive first:
 |---|---|---|---|
 | Information disclosure | A copied snapshot is read in the DR region | Snapshots are copied encrypted with a DR key that has an explicit policy | None known |
 | Information disclosure | A restored database is left open | The DR security group allows only a single operator address; the runbook says to remove it afterwards | Removal depends on following the runbook |
-| Denial of service | No recent copy exists when needed | Runbook documents the manual copy | No scheduled snapshots or cross-region copies, so the recovery point is whatever someone copied last |
+| Denial of service | No recent copy exists when needed | Runbook documents the manual copy | Scheduled backups with a cross-region copy exist in code (ADR 0014) but have not run on AWS |
 
 ## Not covered
 

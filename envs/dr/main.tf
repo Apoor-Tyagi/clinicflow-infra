@@ -72,3 +72,9 @@ resource "aws_vpc_security_group_ingress_rule" "operator" {
   to_port           = 5432
   cidr_ipv4         = var.operator_cidr
 }
+
+# Receives the daily backup copies from the primary region
+resource "aws_backup_vault" "dr" {
+  name        = "clinicflow-dr"
+  kms_key_arn = aws_kms_key.dr.arn
+}
