@@ -20,3 +20,8 @@ output "ecr_repository_url" {
   description = "URL of the clinicflow-api ECR repository"
   value       = aws_ecr_repository.api.repository_url
 }
+
+output "trail_bucket_name" {
+  description = "Bucket that holds the CloudTrail logs"
+  value       = aws_s3_bucket.trail.id
+}

@@ -75,7 +75,7 @@ Assets worth protecting, most sensitive first:
 
 ## Not covered
 
-- No CloudTrail trail or account-level detection is configured, so there is no audit of who did what in AWS.
+- A CloudTrail trail exists in code (ADR 0015) but has not been applied, and nothing alerts on it. There is no account-level detection.
 - No WAF or rate limiting in front of the API.
 - SES is in sandbox mode, so abuse and bounce handling are not exercised.
 - No penetration test and no formal review beyond this document.
