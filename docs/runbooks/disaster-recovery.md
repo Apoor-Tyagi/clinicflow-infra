@@ -30,7 +30,8 @@ Times are from a nearly empty db.t4g.micro and scale with data size.
    parameter group and security group from envs/dr (10 min 25 s to available).
 3. Reset the master password with a freshly generated value (about 2 min). A
    restore keeps the old password, and the managed secret belongs to the source.
-4. Reboot the instance so rds.force_ssl takes effect (not timed in the drill).
+4. Reboot the instance so rds.force_ssl takes effect. This step is untested: the drill
+   never rebooted, and the need for it is inferred from the parameter's pending-reboot status.
    Until the reboot the restored instance does not enforce TLS, because the
    parameter is static. Connect with sslmode=require in the meantime.
 5. Connect and read a known row to confirm the data is intact (27 s after the
