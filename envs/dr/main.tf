@@ -52,8 +52,9 @@ resource "aws_db_parameter_group" "dr" {
   family = var.parameter_group_family
 
   parameter {
-    name  = "rds.force_ssl"
-    value = "1"
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "pending-reboot" # static parameter: AWS rejects immediate
   }
 }
 
