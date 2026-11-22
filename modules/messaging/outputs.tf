@@ -27,3 +27,8 @@ output "schedule_group_name" {
   description = "Schedule group for per-appointment reminder schedules"
   value       = aws_scheduler_schedule_group.reminders.name
 }
+
+output "alerts_topic_arn" {
+  description = "SNS topic that receives alarm notifications"
+  value       = aws_sns_topic.alerts.arn
+}

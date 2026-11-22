@@ -27,3 +27,14 @@ variable "visibility_timeout_seconds" {
   type        = number
   description = "How long a received message stays hidden while the worker processes it"
 }
+
+variable "alarm_email" {
+  type        = string
+  default     = ""
+  description = "Address that receives dead-letter queue alerts. Empty means no subscription"
+
+  validation {
+    condition     = var.alarm_email == "" || can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.alarm_email))
+    error_message = "Use an empty string or a real email address."
+  }
+}
