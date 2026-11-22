@@ -1,3 +1,4 @@
+# Outputs used by the disaster recovery restore commands
 output "kms_key_arn" {
   description = "Key that encrypts the copied snapshot and the restored instance"
   value       = aws_kms_key.dr.arn
