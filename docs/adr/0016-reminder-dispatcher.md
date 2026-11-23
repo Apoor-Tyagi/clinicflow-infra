@@ -48,3 +48,15 @@ appointment is cancelled after its schedule exists, it deletes the schedule.
 
 This ADR describes the design. The "Verified on AWS" section is added after a real
 booking from the UI has produced an email.
+
+## Found on AWS: sandbox SES also checks the recipient identity
+
+The first real booking from the UI reached the worker, and the worker could not send.
+The worker logs only an error type, so the reason was read by repeating the send as the
+node role. SES answered AccessDenied on `identity/<recipient>`: while an account is in
+sandbox mode, SES evaluates `ses:SendEmail` against the recipient identity as well as the
+sender. The policy listed only the sender, so it worked when the recipient was the sender
+and failed for every other address. The policy now also allows identities in the account,
+and the `ses:FromAddress` condition still limits the From address to the one sender.
+The earlier sends that appeared to fail for "unverified recipients" were a separate,
+real cause: the patient used a different, unverified address.

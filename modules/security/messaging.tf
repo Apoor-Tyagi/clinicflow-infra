@@ -52,10 +52,16 @@ data "aws_iam_policy_document" "messaging" {
   }
 
   statement {
-    sid       = "SendReminderEmail"
-    effect    = "Allow"
-    actions   = ["ses:SendEmail"]
-    resources = [var.sender_identity_arn]
+    sid     = "SendReminderEmail"
+    effect  = "Allow"
+    actions = ["ses:SendEmail"]
+    # While the SES account is in sandbox mode, SES also checks the permission against the
+    # recipient's identity, so the sender alone is not enough. The condition below still
+    # restricts the From address to the one sender.
+    resources = [
+      var.sender_identity_arn,
+      "arn:aws:ses:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:identity/*",
+    ]
 
     condition {
       test     = "StringEquals"
