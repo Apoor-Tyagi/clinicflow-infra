@@ -5,6 +5,8 @@ cloud engineering portfolio project. The application is deliberately small. The
 platform around it is the point: infrastructure as code, CI/CD, GitOps,
 security, observability, cost control and disaster recovery on AWS.
 
+To run it, see [Getting started](docs/getting-started.md).
+
 Three repositories:
 
 - [clinicflow-infra](https://github.com/Apoor-Tyagi/clinicflow-infra): Terraform for AWS (this repository)
@@ -72,7 +74,7 @@ All figures come from real runs. The measurement notes are in the ADRs.
 
 ## Known limits
 
-- The booking API is out of scope. Today the API serves health checks and
-  metrics, and reminders are exercised through the queue directly.
+- The API covers clinics, patients and appointments, with a basic front desk UI. There is no
+  login beyond a clinic API key, and appointments cannot be rescheduled or edited.
 - Delivery is at-least-once, so a crash between sending and recording can send
   one email twice ([ADR 0012](docs/adr/0012-reminder-messaging.md)).

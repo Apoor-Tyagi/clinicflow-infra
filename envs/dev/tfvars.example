@@ -1,0 +1,3 @@
+# Copy to terraform.tfvars (gitignored; cp tfvars.example terraform.tfvars) and fill in. Never commit real addresses.
+reminder_sender_email = "you@example.com"   # SES sender; verify it from the email AWS sends
+alarm_email           = "you@example.com"   # dead-letter queue alerts; confirm the subscription email
