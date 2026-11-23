@@ -34,6 +34,7 @@ row-level security.
 - Every decision is recorded in [docs/adr](docs/adr).
 - The disaster recovery steps and measured times are in the [runbook](docs/runbooks/disaster-recovery.md).
 - Risks, controls and known gaps are in the [threat model](docs/threat-model.md).
+- A walkthrough of the project for interviews is in [interview prep](docs/interview-prep.md).
 
 ## Evidence
 
