@@ -1,0 +1,5 @@
+# Copy to terraform.tfvars (gitignored; cp tfvars.example terraform.tfvars) and fill in.
+alert_email           = "you@example.com"
+github_sub_prefix     = "repo:OWNER@OWNER_ID/clinicflow-infra@REPO_ID"
+github_app_sub_prefix = "repo:OWNER@OWNER_ID/clinicflow-app@REPO_ID"
+# Get the ids with: gh api repos/OWNER/REPO --jq .id   and   gh api users/OWNER --jq .id
