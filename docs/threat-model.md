@@ -20,7 +20,8 @@ Assets worth protecting, most sensitive first:
 
 - Internet to the API (the only intended public entry).
 - Pods to the node's instance metadata and instance role.
-- The node to RDS, SQS, SES and DynamoDB.
+- The node to RDS, SQS, SES, DynamoDB and EventBridge Scheduler.
+- The operator's laptop to the UI, through an SSM port-forward to the node (nothing is public).
 - GitHub Actions to AWS.
 - The primary region to the DR region.
 
@@ -55,6 +56,9 @@ Assets worth protecting, most sensitive first:
 | Information disclosure | Secrets are read from the cluster | The application database password is created at bootstrap and held in a Kubernetes Secret | Not verified whether Kubernetes Secrets are encrypted at rest in k3s; assume they are not |
 | Denial of service | The single node fails | A new node can be built from Terraform and Argo CD | No high availability; the node is a single point of failure by design, for cost |
 | Tampering | A malicious image runs | Images are scanned with Trivy in CI, with a gate; pushes happen only from main | No admission control (for example Kyverno) to stop unsigned or unscanned images in the cluster |
+| Elevation of privilege | The dispatcher reads more than it needs | It uses its own database role with column grants and role-specific row policies, and no RLS bypass (ADR 0016) | It runs with the node's instance role, so a compromise holds the node's AWS permissions |
+| Information disclosure | A patient email sits in the schedule input | The schedule is deleted after it fires and the queue is encrypted with a CMK | The address is readable by anyone who can read EventBridge schedules until it fires |
+| Spoofing | The admin token on the node is stolen | The token is used only to create clinics; clinic keys are stored as SHA-256 hashes | The token sits in the node's configuration and is not rotated |
 
 ### CI and AWS access
 

@@ -48,6 +48,8 @@ All figures come from real runs. The measurement notes are in the ADRs.
 | Duplicate reminders | The same reminder sent twice, 60 s apart, produced one email and one audit record; the worker logged the second as a dropped duplicate ([ADR 0012](docs/adr/0012-reminder-messaging.md)) |
 | Scheduled backups | A backup started by hand completed in about 4 min and its cross-region copy in about 3.5 min, into an encrypted vault in us-west-2. The daily schedule itself has not yet been observed running ([ADR 0014](docs/adr/0014-scheduled-backups.md)) |
 | Instance role from a pod | A pod timed out requesting a metadata token (curl exit 28) while the node itself got HTTP 200 |
+| Booking in the UI to an email | A booking made in the front desk UI was scheduled by the dispatcher at 14:12:53 UTC and sent by the worker at 14:13:58 UTC, with one audit record and no bounce. The email landed in spam ([ADR 0016](docs/adr/0016-reminder-dispatcher.md)) |
+| SES sandbox recipient permission | The first real sends failed with AccessDenied because sandbox SES checks `ses:SendEmail` against the recipient identity as well as the sender. Found by repeating the send as the node role; fixed in the IAM policy ([ADR 0016](docs/adr/0016-reminder-dispatcher.md)) |
 | SLO alert under fault injection (local, 5% failures) | Fast-burn alert pending 19 s after the first failure, firing after 2 min 36 s, resolved about 4 min after the failures stopped. A low-traffic baseline makes this faster than a busy service would be |
 | Cost of the AWS sessions | $0.06 of billed usage so far (EC2 $0.03, RDS $0.02, ECR $0.01), with no credits applied. Billing lags by a day or two, so the latest sessions, including the DR drill, are not yet in that figure. Every session ended with a destroy |
 

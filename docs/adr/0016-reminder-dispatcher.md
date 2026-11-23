@@ -44,10 +44,23 @@ appointment is cancelled after its schedule exists, it deletes the schedule.
   It is stored in a root-only file and is read once with Session Manager. This is
   adequate for a demo environment. A real deployment needs staff accounts.
 
-## Not verified yet
+## Verified on AWS
 
-This ADR describes the design. The "Verified on AWS" section is added after a real
-booking from the UI has produced an email.
+A booking made in the front desk UI, through an SSM port-forward to the node, produced
+an email in the patient's inbox with no manual step in between.
+
+| Time (UTC) | Event |
+|---|---|
+| 14:12:53 | The dispatcher created the one-time schedule for the appointment |
+| 14:13:58 | The worker logged `reminder sent` (65 s later, the 60 s minimum lead plus polling) |
+
+The DynamoDB audit table held 2 records afterwards. SES send statistics showed no
+bounces. The email arrived in the spam folder, which is expected for a new, unauthenticated
+sandbox sender. The dead-letter queue alarm also fired again for the earlier failed
+messages, which were left in the queue on purpose.
+
+Not covered: rescheduling an appointment does not re-send or move the reminder, and the
+UI cannot edit a patient's email.
 
 ## Found on AWS: sandbox SES also checks the recipient identity
 
