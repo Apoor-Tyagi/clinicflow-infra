@@ -27,6 +27,31 @@ data "aws_iam_policy_document" "messaging" {
   }
 
   statement {
+    sid    = "ManageReminderSchedules"
+    effect = "Allow"
+    actions = [
+      "scheduler:CreateSchedule",
+      "scheduler:DeleteSchedule",
+    ]
+    resources = [
+      "arn:aws:scheduler:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:schedule/${var.schedule_group_name}/*"
+    ]
+  }
+
+  statement {
+    sid       = "HandSchedulerItsRole"
+    effect    = "Allow"
+    actions   = ["iam:PassRole"]
+    resources = [var.scheduler_role_arn]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["scheduler.amazonaws.com"]
+    }
+  }
+
+  statement {
     sid       = "SendReminderEmail"
     effect    = "Allow"
     actions   = ["ses:SendEmail"]

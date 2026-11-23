@@ -23,6 +23,16 @@ variable "reminders_queue_arn" {
   description = "ARN of the reminders queue the worker consumes"
 }
 
+variable "schedule_group_name" {
+  type        = string
+  description = "EventBridge Scheduler group that holds the per-appointment reminder schedules"
+}
+
+variable "scheduler_role_arn" {
+  type        = string
+  description = "Role EventBridge Scheduler assumes to send reminders to the queue"
+}
+
 variable "sender_identity_arn" {
   type        = string
   description = "ARN of the SES identity the worker sends from"

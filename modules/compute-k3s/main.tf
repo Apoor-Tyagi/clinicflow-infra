@@ -68,6 +68,10 @@ resource "aws_instance" "node" {
     queue_url            = var.queue_url
     sender_email         = var.sender_email
     audit_table          = var.audit_table_name
+    queue_arn            = var.queue_arn
+    schedule_group       = var.schedule_group_name
+    scheduler_role_arn   = var.scheduler_role_arn
+    migration_files      = join(" ", var.migration_files)
   })
   user_data_replace_on_change          = true
   instance_initiated_shutdown_behavior = "terminate"

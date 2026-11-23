@@ -16,6 +16,8 @@ module "security" {
   audit_table_arn     = module.audit_table.table_arn
   reminders_queue_arn = module.messaging.queue_arn
   sender_identity_arn = module.messaging.sender_identity_arn
+  schedule_group_name = module.messaging.schedule_group_name
+  scheduler_role_arn  = module.messaging.scheduler_role_arn
   sender_email        = var.reminder_sender_email
 }
 module "compute_k3s" {
@@ -37,6 +39,9 @@ module "compute_k3s" {
   queue_url             = module.messaging.queue_url
   sender_email          = var.reminder_sender_email
   audit_table_name      = module.audit_table.table_name
+  queue_arn             = module.messaging.queue_arn
+  schedule_group_name   = module.messaging.schedule_group_name
+  scheduler_role_arn    = module.messaging.scheduler_role_arn
 }
 module "audit_table" {
   source = "../../modules/data-dynamodb"
