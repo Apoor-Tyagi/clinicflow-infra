@@ -82,3 +82,24 @@ variable "audit_table_name" {
   type        = string
   description = "DynamoDB table the worker writes delivery records to"
 }
+
+variable "queue_arn" {
+  type        = string
+  description = "ARN of the reminders queue that schedules deliver to"
+}
+
+variable "schedule_group_name" {
+  type        = string
+  description = "EventBridge Scheduler group the dispatcher creates reminder schedules in"
+}
+
+variable "scheduler_role_arn" {
+  type        = string
+  description = "Role EventBridge Scheduler assumes to send to the queue"
+}
+
+variable "migration_files" {
+  type        = list(string)
+  description = "Database migration files in the app repo, applied in this order"
+  default     = ["001_tenant_model.sql", "002_api_access.sql", "003_dispatcher.sql"]
+}

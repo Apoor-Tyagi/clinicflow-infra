@@ -73,9 +73,14 @@ for i in $(seq 1 60); do
 done
 getent hosts ${db_host} > /dev/null || { echo "RDS hostname never resolved"; exit 1; }
 APP_PASS=$(openssl rand -hex 16)
+DISPATCH_PASS=$(openssl rand -hex 16)
+ADMIN_TOKEN=$(openssl rand -hex 16)
 
-curl -sfL "${app_raw_url}/db/migrations/001_tenant_model.sql" -o /tmp/001_tenant_model.sql
-kubectl -n clinicflow-dev create configmap db-migration --from-file=/tmp/001_tenant_model.sql --dry-run=client -o yaml | kubectl apply -f -
+mkdir -p /tmp/migrations
+for f in ${migration_files}; do
+  curl -sfL "${app_raw_url}/db/migrations/$f" -o "/tmp/migrations/$f"
+done
+kubectl -n clinicflow-dev create configmap db-migration --from-file=/tmp/migrations --dry-run=client -o yaml | kubectl apply -f -
 kubectl -n clinicflow-dev create secret generic db-admin \
   --from-literal=PGHOST=${db_host} \
   --from-literal=PGUSER="$DB_ADMIN_USER" \
@@ -83,6 +88,7 @@ kubectl -n clinicflow-dev create secret generic db-admin \
   --from-literal=PGDATABASE=clinicflow \
   --from-literal=PGSSLMODE=require \
   --from-literal=APP_PASS="$APP_PASS" \
+  --from-literal=DISPATCH_PASS="$DISPATCH_PASS" \
   --dry-run=client -o yaml | kubectl apply -f -
 unset DB_ADMIN_PASS
 
@@ -109,13 +115,18 @@ spec:
             - |
               for i in $(seq 1 60); do pg_isready -q && break; echo "waiting for database ($i)"; sleep 5; done
               pg_isready -q || { echo "database never became ready"; exit 1; }
-              EXISTS=$(psql -tAc "SELECT to_regclass('public.clinics')") || exit 1
-              if [ "$EXISTS" = "public.clinics" ]; then
-                echo "schema already exists, skipping migration"
-              else
-                psql -v ON_ERROR_STOP=1 -f /sql/001_tenant_model.sql
-              fi
+              psql -v ON_ERROR_STOP=1 -q -c "CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())"
+              for f in $(ls /sql | sort); do
+                DONE=$(psql -tAc "SELECT 1 FROM schema_migrations WHERE name = '$f'") || exit 1
+                if [ "$DONE" = "1" ]; then
+                  echo "migration $f already applied, skipping"
+                else
+                  echo "applying migration $f"
+                  psql -v ON_ERROR_STOP=1 -q -1 -f "/sql/$f" -c "INSERT INTO schema_migrations (name) VALUES ('$f')"
+                fi
+              done
               psql -v ON_ERROR_STOP=1 -c "ALTER ROLE clinicflow_app PASSWORD '$APP_PASS'"
+              psql -v ON_ERROR_STOP=1 -c "ALTER ROLE clinicflow_dispatcher PASSWORD '$DISPATCH_PASS'"
           volumeMounts:
             - name: sql
               mountPath: /sql
@@ -129,8 +140,17 @@ kubectl -n clinicflow-dev delete secret db-admin
 
 kubectl -n clinicflow-dev create secret generic api-config \
   --from-literal=DATABASE_URL="postgresql://clinicflow_app:$APP_PASS@${db_host}:5432/clinicflow?sslmode=require" \
+  --from-literal=ADMIN_TOKEN="$ADMIN_TOKEN" \
   --dry-run=client -o yaml | kubectl apply -f -
-unset APP_PASS
+
+# The dispatcher runs on the host and reads its database URL from a root-only file
+install -d -m 0700 /etc/clinicflow
+printf 'DATABASE_URL=postgresql://clinicflow_dispatcher:%s@${db_host}:5432/clinicflow?sslmode=require\n' "$DISPATCH_PASS" > /etc/clinicflow/dispatcher.env
+chmod 600 /etc/clinicflow/dispatcher.env
+# The admin token is needed once, to create the first clinic. Read it with Session Manager.
+printf '%s' "$ADMIN_TOKEN" > /root/admin-token
+chmod 600 /root/admin-token
+unset APP_PASS DISPATCH_PASS ADMIN_TOKEN
 
 # 5. Argo CD, pinned
 kubectl apply -n argocd --server-side --force-conflicts \
@@ -184,9 +204,65 @@ CapabilityBoundingSet=
 WantedBy=multi-user.target
 UNIT
 
+# Reminder dispatcher: turns queued reminders into EventBridge schedules
+install -d -m 0755 /opt/clinicflow-dispatcher
+curl -sfL "${app_raw_url}/dispatcher/dispatcher.py" -o /opt/clinicflow-dispatcher/dispatcher.py
+curl -sfL "${app_raw_url}/dispatcher/requirements.txt" -o /opt/clinicflow-dispatcher/requirements.txt
+$PYBIN -m venv /opt/clinicflow-dispatcher/venv
+/opt/clinicflow-dispatcher/venv/bin/pip install --no-cache-dir -r /opt/clinicflow-dispatcher/requirements.txt
+
+cat > /etc/systemd/system/clinicflow-dispatcher.service <<'UNIT'
+[Unit]
+Description=ClinicFlow reminder dispatcher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Environment=AWS_REGION=${region}
+Environment=SCHEDULE_GROUP=${schedule_group}
+Environment=QUEUE_ARN=${queue_arn}
+Environment=SCHEDULER_ROLE_ARN=${scheduler_role_arn}
+EnvironmentFile=/etc/clinicflow/dispatcher.env
+ExecStart=/opt/clinicflow-dispatcher/venv/bin/python /opt/clinicflow-dispatcher/dispatcher.py
+Restart=always
+RestartSec=5
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+# Front desk page for the demo: a loopback-only port-forward. Nothing is exposed to the
+# internet. Reach it from a laptop with a Session Manager port-forwarding session.
+cat > /etc/systemd/system/clinicflow-ui-forward.service <<'UNIT'
+[Unit]
+Description=Port-forward the ClinicFlow API to the node loopback
+After=k3s.service
+
+[Service]
+Environment=KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+ExecStart=/usr/local/bin/kubectl -n clinicflow-dev port-forward --address 127.0.0.1 svc/clinicflow-api 8000:80
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
 systemctl daemon-reload
 systemctl enable --now clinicflow-worker.service
+systemctl enable --now clinicflow-dispatcher.service
+systemctl enable --now clinicflow-ui-forward.service
 sleep 5
-systemctl is-active clinicflow-worker.service
+systemctl is-active clinicflow-worker.service clinicflow-dispatcher.service
 
 echo "bootstrap finished: $(date -u)"
